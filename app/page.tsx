@@ -1,65 +1,152 @@
-import Image from "next/image";
+import Header from "@/components/Header"
+import Hero from "@/components/Hero"
+import Categories from "@/components/Categories"
+import FeaturedListings from "@/components/FeaturedListings"
+import Footer from "@/components/Footer"
+import prisma from "@/lib/prisma"
+import { buildTrustBadges } from "@/lib/trustBadges"
 
-export default function Home() {
+export const dynamic = "force-dynamic"
+
+const CITY_PREFIX = "city:"
+const TOWN_PREFIX = "town:"
+const PROVINCE_PREFIX = "province:"
+const REGION_PREFIX = "region:"
+const AVAILABILITY_SCOPE_PREFIX = "availabilityScope:"
+
+function getTagValue(tags: string[], prefix: string) {
+  const tag = tags.find((item) => item.startsWith(prefix))
+  return tag ? tag.slice(prefix.length) : null
+}
+
+function getProductLocation(tags: string[]) {
+  const availabilityScope = getTagValue(tags, AVAILABILITY_SCOPE_PREFIX)
+  if (availabilityScope === "ALL_ZIMBABWE") {
+    return "All Zimbabwe"
+  }
+
+  const locationParts = [
+    getTagValue(tags, CITY_PREFIX),
+    getTagValue(tags, TOWN_PREFIX),
+    getTagValue(tags, PROVINCE_PREFIX),
+    getTagValue(tags, REGION_PREFIX),
+  ]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+
+  return locationParts.length > 0 ? locationParts.join(", ") : "Not specified"
+}
+
+async function getApprovedFeaturedProducts() {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        status: "PUBLISHED",
+        tags: {
+          has: "approval:approved",
+        },
+      },
+      orderBy: [{ popularity: "desc" }, { updatedAt: "desc" }],
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            emailVerified: true,
+          },
+        },
+        images: {
+          select: { url: true, sortOrder: true },
+          orderBy: { sortOrder: "asc" },
+          take: 1,
+        },
+      },
+      take: 8,
+    })
+
+    const productIds = products.map((product) => product.id)
+    const sellerIds = Array.from(
+      new Set(products.map((product) => product.seller?.id).filter((sellerId): sellerId is string => Boolean(sellerId)))
+    )
+
+    const [ratingsByProduct, sellerPublishedCounts] = await Promise.all([
+      productIds.length > 0
+        ? prisma.review.groupBy({
+            by: ["productId"],
+            where: {
+              productId: { in: productIds },
+              status: "APPROVED",
+            },
+            _avg: {
+              rating: true,
+            },
+          })
+        : Promise.resolve([]),
+      sellerIds.length > 0
+        ? prisma.product.groupBy({
+            by: ["sellerId"],
+            where: {
+              sellerId: { in: sellerIds },
+              status: "PUBLISHED",
+              tags: {
+                has: "approval:approved",
+              },
+            },
+            _count: {
+              _all: true,
+            },
+          })
+        : Promise.resolve([]),
+    ])
+
+    const ratingMap = new Map(ratingsByProduct.map((item) => [item.productId, item._avg.rating]))
+    const sellerCountMap = new Map(
+      sellerPublishedCounts
+        .filter((item) => item.sellerId)
+        .map((item) => [item.sellerId as string, item._count._all])
+    )
+
+    return products.map((product) => ({
+      id: product.id,
+      title: product.name,
+      price: `$${product.price.toFixed(2)}`,
+      image: product.images[0]?.url || "/window.svg",
+      brand: product.brand || "Unbranded",
+      location: getProductLocation(product.tags),
+      category: product.category?.name || "General",
+      badges: buildTrustBadges({
+        tags: product.tags,
+        brand: product.brand,
+        sellerVerified: Boolean(product.seller?.emailVerified),
+        sellerPublishedCount: product.seller?.id ? sellerCountMap.get(product.seller.id) || 0 : 0,
+        averageRating: ratingMap.get(product.id) ?? null,
+        popularity: product.popularity,
+      }),
+    }))
+  } catch (error) {
+    console.error("HOME_PRODUCTS_LOAD_ERROR", error)
+    return []
+  }
+}
+
+export default async function HomePage() {
+  const featuredProducts = await getApprovedFeaturedProducts()
+
+  const brands = Array.from(new Set(featuredProducts.map((p) => p.brand))).sort()
+  const locations = Array.from(new Set(featuredProducts.map((p) => p.location))).sort()
+  const categories = Array.from(new Set(featuredProducts.map((p) => p.category))).sort()
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    <main className="bg-gray-50 min-h-screen flex flex-col">
+      <Header />
+      <Hero brands={brands} locations={locations} categories={categories} />
+      <Categories />
+      <FeaturedListings products={featuredProducts} />
+      <Footer />
+    </main>
+  )
 }

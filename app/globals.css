@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f8fbff;
   --foreground: #171717;
+  --page-tint: rgba(56, 189, 248, 0.08);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -12,15 +14,65 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
+  position: relative;
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Ensure proper font sizing on mobile */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Mobile-first responsive adjustments */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Ensure text inputs and selects have proper visibility */
+input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+input,
+select,
+textarea {
+  color: #111827;
+}
+
+select option {
+  color: #111827;
+  background-color: white;
+}
+
+/* Headings should follow the surrounding component color instead of forcing a global override. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: inherit;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--page-tint) 0%, transparent 70%);
+  z-index: 0;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.25);
 }
