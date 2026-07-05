@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -42,7 +42,7 @@ function formatMessageTime(value: string) {
   return new Date(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
 }
 
-export default function RequestMessagesPage() {
+function RequestMessagesPageContent() {
   const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -248,5 +248,13 @@ export default function RequestMessagesPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function RequestMessagesPage() {
+  return (
+    <Suspense>
+      <RequestMessagesPageContent />
+    </Suspense>
   )
 }

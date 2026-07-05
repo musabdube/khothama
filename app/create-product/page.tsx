@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
@@ -80,7 +80,7 @@ const initialFormState: FormState = {
 const parseCsv = (value: string) =>
   value.split(",").map((s) => s.trim()).filter(Boolean)
 
-export default function CreateProductPage() {
+function CreateProductPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get("edit")
@@ -623,5 +623,13 @@ export default function CreateProductPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function CreateProductPage() {
+  return (
+    <Suspense>
+      <CreateProductPageContent />
+    </Suspense>
   )
 }

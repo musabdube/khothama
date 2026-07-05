@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
@@ -40,7 +41,7 @@ function formatMessageTime(value: string) {
   return new Date(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
 }
 
-export default function MessagesPage() {
+function MessagesPageContent() {
   const { data: session, status: sessionStatus } = useSession()
   const searchParams = useSearchParams()
   const requestedConversationId = searchParams.get("cid")
@@ -258,5 +259,13 @@ export default function MessagesPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense>
+      <MessagesPageContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -101,7 +101,7 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const { data: session, status: sessionStatus } = useSession()
   const searchParams = useSearchParams()
   const categoryFilter = (searchParams.get("category") || "").trim().toLowerCase()
@@ -986,5 +986,13 @@ export default function ProductsPage() {
         </div>
       )}
     </main>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsPageContent />
+    </Suspense>
   )
 }

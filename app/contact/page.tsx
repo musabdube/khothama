@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -57,7 +57,7 @@ type ContactConversationDetail = {
   }>
 }
 
-export default function ContactPage() {
+function ContactPageContent() {
   const { data: session, status: sessionStatus } = useSession()
   const searchParams = useSearchParams()
   const requestedConversationId = searchParams.get("cid")
@@ -493,5 +493,13 @@ export default function ContactPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense>
+      <ContactPageContent />
+    </Suspense>
   )
 }

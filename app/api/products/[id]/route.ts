@@ -265,10 +265,7 @@ export async function GET(
       currentPopularity = viewedProduct.popularity
     }
 
-    const imageUrls = [
-      ...product.images.map((image) => image.url),
-      ...(product.image ? [product.image] : []),
-    ].filter(Boolean)
+    const imageUrls = product.images.map((image) => image.url).filter(Boolean)
 
     const deliveryMethods = getStoredDeliveryMethods(product.tags)
 

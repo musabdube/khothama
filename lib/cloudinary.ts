@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from "cloudinary"
+import { v2 as cloudinary, UploadApiOptions } from "cloudinary"
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -29,7 +29,7 @@ export async function uploadToCloudinary(
   publicId?: string
 ): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {
-    const options: Parameters<typeof cloudinary.uploader.upload>[1] = {
+    const options: UploadApiOptions = {
       folder,
       resource_type: "image",
       ...(publicId ? { public_id: publicId } : {}),

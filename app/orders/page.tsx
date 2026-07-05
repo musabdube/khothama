@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Header from "@/components/Header"
@@ -50,7 +50,7 @@ const ORDER_STATUSES: OrderStatus[] = [
   "REFUNDED",
 ]
 
-export default function OrdersPage() {
+function OrdersPageContent() {
   const { data: session, status: sessionStatus } = useSession()
   const searchParams = useSearchParams()
   const queryFromUrl = (searchParams.get("q") ?? "").trim()
@@ -375,5 +375,13 @@ export default function OrdersPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense>
+      <OrdersPageContent />
+    </Suspense>
   )
 }
